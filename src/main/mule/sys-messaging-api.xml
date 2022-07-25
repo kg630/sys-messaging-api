@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<jms:config name="JMS_Config" doc:name="JMS Config" doc:id="817ad7c2-44ab-483f-8df7-30dd58756b96" >
+		<jms:active-mq-connection username="admin" password="admin">
+			<jms:factory-configuration brokerUrl="tcp://localhost:61616" />
+		</jms:active-mq-connection>
+	</jms:config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="38a250f8-1cad-4ffd-93db-bc0f422c1621" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="sys-messaging-apiFlow" doc:id="cbb42d75-2c97-4aa5-981e-448e5971b4cf" >
+		<http:listener doc:name="Listener" doc:id="6ea992bf-96f7-4687-a783-ff8b785ae30c" config-ref="HTTP_Listener_config" path="/messaging" allowedMethods="POST"/>
+		<jms:publish doc:name="Publish" doc:id="6e04a6bf-cb6c-4a34-951e-d9c07b7943cf" config-ref="JMS_Config" destination="TestMuleQ"/>
+		<ee:transform doc:name="Transform Message" doc:id="4682c4d0-b43c-4ef9-843d-67bd09bbc7f9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status : "Accomplished"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="sys-messaging-apiFlow2" doc:id="037c10e0-cdfe-49d5-9c5f-88218b0faa34" >
+		<http:listener doc:name="Listener" doc:id="9815fa01-cca0-4395-8f0c-413081894a2a" config-ref="HTTP_Listener_config" path="/messaging" allowedMethods="GET"/>
+		<jms:consume doc:name="Consume" doc:id="9f654f35-46a8-44e9-b010-867bd83d164f" config-ref="JMS_Config" destination="TestMuleQ1">
+			<jms:consumer-type >
+				<jms:queue-consumer />
+			</jms:consumer-type>
+		</jms:consume>
+	</flow>
+	<flow name="sys-messaging-apiFlow1" doc:id="18a461c4-0564-40f0-9088-fb67a7b809a4" >
+		<jms:listener doc:name="On New Message" doc:id="44dee19f-6614-4cb0-9838-1fcec4f4185a" config-ref="JMS_Config" destination="TestMuleQ1" inboundContentType="application/json">
+			<jms:consumer-type >
+				<jms:queue-consumer />
+			</jms:consumer-type>
+		</jms:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="a6442642-31e9-4c78-a0d6-04b6b7de89ea" message="#[payload]"/>
+	</flow>
+</mule>
